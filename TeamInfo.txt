@@ -1,7 +1,0 @@
-Team058:
-Zhiyuan Cai    	email: zcai71@gatech.edu
-Baozhen Chen    email: bchen353@gatech.edu
-Fan Fei    	email: ffei6@gatech.edu
-Lingqiong Guo   email: lguo66@gatech.edu
-
-All SQL queries are placed in a single file "SQL_queries.txt" in the root directory. 
