@@ -1,0 +1,209 @@
+// see home.php
+$get_name_sql = "SELECT  Fullname from User WHERE Email = '$useremail'";
+
+$recentcbquery = sprintf("SELECT DISTINCT c.Title, c.Cate_Name, c.CB_DateTime, u.Fullname, c.OwnerEmail, 
+                            (case when pu.OwnerEmail is not null and pu.CB_DateTime is not null then 1 else 0 end) as Visibility,
+						    max(p.PP_DateTime) as update_Time
+                            FROM Corkboard c LEFT JOIN User u ON u.Email = c.OwnerEmail LEFT JOIN Follows f 
+                            ON f.FollowerEmail = '%s' LEFT JOIN Watches w ON w.WatcherEmail = '%s' and c.CB_DateTime=w.CB_DateTime
+                            LEFT JOIN public_corkboard PU ON c.OwnerEmail=pu.OwnerEmail and c.CB_DateTime=pu.CB_DateTime 
+							INNER JOIN pushpin p on c.OwnerEmail=p.OwnerEmail and C.CB_DateTime=p.CB_DateTime
+                            WHERE u.Email = '%s' OR u.Email = f.FolloweeEmail OR u.Email = w.OwnerEmail 
+							group by c.Title,c.Cate_Name, c.CB_DateTime, u.Fullname, c.OwnerEmail
+							ORDER BY update_Time DESC LIMIT 4",
+                            mysqli_real_escape_string($db,$_SESSION['myusername']),
+                            mysqli_real_escape_string($db,$_SESSION['myusername']),
+                            mysqli_real_escape_string($db,$_SESSION['myusername'])
+                            );
+
+$usercbquery= sprintf("
+                    SELECT c.Title, c.OwnerEmail,c.CB_DateTime,(case when pu.OwnerEmail is not null and pu.CB_DateTime is not null then 1 else 0 end) as Visibility,count(distinct p.PP_DateTime) as pp_cnt
+                    FROM Corkboard c 
+                    LEFT JOIN public_corkboard PU ON c.OwnerEmail=pu.OwnerEmail and c.CB_DateTime=pu.CB_DateTime 
+                    LEFT JOIN pushpin p ON c.OwnerEmail = p.OwnerEmail and c.CB_DateTime=p.CB_DateTime
+                    WHERE c.OwnerEmail = '%s'
+                    group by c.OwnerEmail,c.CB_DateTime,Visibility
+                    ORDER BY c.OwnerEmail,c.CB_DateTime,Visibility DESC",
+                    mysqli_real_escape_string($db,$_SESSION['myusername']));
+
+
+// see corkboard_add.php
+$catquery = "SELECT name FROM Category";
+
+
+// see corkboard_add_submit.php
+$nowsql = "SELECT now() FROM user limit 1";
+
+
+// see checkpassword.php
+$sql=sprintf("
+SELECT *
+FROM private_corkboard
+WHERE OwnerEmail = '%s'
+AND CB_DateTime = '%s'
+AND Password = '%s'",
+mysqli_real_escape_string($db,$OwnerEmail),
+mysqli_real_escape_string($db,$CB_DateTime),
+mysqli_real_escape_string($db,$corkpass)
+);
+
+
+// see corkboard_view.php
+$cbquery = sprintf("
+        SELECT c.OwnerEmail, u.FullName, c.Cate_Name, c.CB_DateTime, c.Title
+        FROM Corkboard c
+        LEFT JOIN User AS u ON u.Email = '%s'
+        WHERE c.CB_DateTime = '%s' and c.OwnerEmail = '%s'
+        LIMIT 1 ",
+        mysqli_real_escape_string($db,$_GET['OwnerEmail']),
+        mysqli_real_escape_string($db,$_GET['CB_DateTime']),
+        mysqli_real_escape_string($db,$_GET['OwnerEmail'])
+    );
+
+$followquery = sprintf("
+    SELECT * FROM Follows
+    WHERE FollowerEmail = '%s'
+    AND FolloweeEmail = '%s'",
+    mysqli_real_escape_string($db,$_SESSION['myusername']),
+    mysqli_real_escape_string($db,$cbowner));
+
+$watchquery = sprintf("
+    SELECT * FROM Watches w 
+    WHERE WatcherEmail = '%s'
+    AND CB_DateTime = '%s'
+    AND OwnerEmail = '%s'",
+    mysqli_real_escape_string($db,$_SESSION['myusername']),
+    $_GET['CB_DateTime'],
+    mysqli_real_escape_string($db,$cbowner));
+
+$visquery = sprintf("
+    SELECT * FROM private_corkboard w 
+    WHERE CB_DateTime = '%s'
+    AND OwnerEmail = '%s'",
+    $_GET['CB_DateTime'],
+    mysqli_real_escape_string($db,$cbowner));
+
+$cbtnquery = sprintf("
+    SELECT DISTINCT Link,PP_DateTime
+    FROM PushPin
+    WHERE OwnerEmail = '%s'
+    AND CB_DateTime = '%s'",
+    mysqli_real_escape_string($db,$_GET['OwnerEmail']),
+    mysqli_real_escape_string($db,$_GET['CB_DateTime'])
+    );
+
+$watcherquery = sprintf("
+    SELECT COUNT(OwnerEmail) 
+    FROM Watches
+    WHERE CB_DateTime = '%s'
+    AND OwnerEmail = '%s'",
+    $_GET['CB_DateTime'],
+    mysqli_real_escape_string($db,$OwnerEmail));
+
+
+// see createpushpin.php
+$checkquery = sprintf("
+SELECT * 
+FROM PushPin
+WHERE Link = '%s' 
+AND OwnerEmail = '%s'
+AND CB_DateTime = '%s'",
+mysqli_real_escape_string($db,$url),
+mysqli_real_escape_string($db,$OwnerEmail),
+mysqli_real_escape_string($db,$CB_DateTime));
+
+$nowsql = "SELECT now() FROM user limit 1";
+
+
+// see pushpin_view.php
+$cbquery = sprintf("
+	SELECT c.OwnerEmail, u.FullName, c.Cate_Name, c.CB_DateTime,c.Title
+        FROM Corkboard c
+        LEFT JOIN User AS u ON u.Email = '%s'
+        WHERE c.CB_DateTime = '%s' and c.OwnerEmail = '%s'
+        LIMIT 1
+	",
+	mysqli_real_escape_string($db,$_GET['OwnerEmail']),
+	mysqli_real_escape_string($db,$_GET['CB_DateTime']),
+	mysqli_real_escape_string($db,$_GET['OwnerEmail'])
+);
+
+$followquery = sprintf("
+SELECT * FROM Follows
+WHERE FollowerEmail = '%s'
+AND FolloweeEmail = '%s'",
+mysqli_real_escape_string($db,$_SESSION['myusername']),
+mysqli_real_escape_string($db,$cbowner));
+
+$likequery = sprintf("
+SELECT * FROM Likes
+WHERE LikerEmail = '%s'
+AND PP_DateTime = '%s'
+AND OwnerEmail = '%s'
+AND CB_DateTime = '%s'",
+mysqli_real_escape_string($db,$_SESSION['myusername']),
+mysqli_real_escape_string($db,$_GET['PP_DateTime']),
+mysqli_real_escape_string($db,$cbowner),
+mysqli_real_escape_string($db,$_GET['CB_DateTime']));
+
+$dateQuery = "SELECT PP_DateTime, Description,Link,
+                        substring_index(substring_index(substring_index(link, 'https://', -1),'http://',-1), '/', 1) as TRUNCATELink
+                        FROM PushPin WHERE PP_DateTime=\"".$PP_DateTime."\" AND OwnerEmail=\"".$OwnerEmail."\" AND CB_DateTime=\"".$CB_DateTime."\"";
+
+$visquery = "SELECT (case when pu.OwnerEmail is not null and pu.CB_DateTime is not null then 0 else 1 end) as Visibility 
+                            FROM Corkboard c left join Public_Corkboard pu on c.OwnerEmail=pu.OwnerEmail and c.CB_DateTime=pu.CB_DateTime
+                                WHERE c.CB_DateTime=\"".$CB_DateTime."\" AND c.OwnerEmail=\"".$OwnerEmail."\"";
+
+$userquery = "SELECT FullName FROM User WHERE Email=\"".$OwnerEmail."\"";
+
+$tagquery = "SELECT Tag FROM PushPin_Tag WHERE PP_DateTime=\"".$PP_DateTime."\" AND OwnerEmail=\"".$OwnerEmail."\" AND CB_DateTime=\"".$CB_DateTime."\"";
+
+$likequery = "SELECT LikerEmail,FullName FROM Likes INNER JOIN USER U ON LikerEmail=U.Email
+                        WHERE OwnerEmail=\"".$OwnerEmail."\" AND PP_DateTime=\"".$PP_DateTime."\" AND LikerEmail=\"".$_SESSION['myusername']."\" AND CB_DateTime=\"".$CB_DateTime."\"";
+
+$likerquery = "SELECT LikerEmail,FullName FROM Likes INNER JOIN USER U ON LikerEmail=U.Email
+                        WHERE OwnerEmail=\"".$OwnerEmail."\" AND PP_DateTime=\"".$PP_DateTime."\" AND CB_DateTime=\"".$CB_DateTime."\"";
+
+$commentquery = "SELECT u.FullName, Text, Com_DateTime FROM Comment c INNER JOIN USER U ON U.Email=C.CommenterEmail
+                WHERE PP_DateTime=\"".$PP_DateTime."\" AND OwnerEmail=\"".$OwnerEmail."\" AND CB_DateTime=\"".$CB_DateTime."\"
+				order by Com_DateTime desc";
+
+
+// see corkboard_statistics.php
+$statquery= sprintf("SELECT G.Email, G.FullName AS User, IFNULL(G.PCCount, 0) AS `Public CorkBoards`, IFNULL(G.PPCount, 0) AS `Public PushPins`, IFNULL(H.VCCount,0) AS `Private CorkBoards`, IFNULL(H.VPCount,0) AS `Private PushPins` 
+            FROM (SELECT USER.Email, USER.FullName, PCCount, PPCount
+            FROM USER LEFT JOIN  (SELECT A.Email AS Email, A.PCCount, B.PPCount FROM 
+            (SELECT PUBLIC_CORKBOARD.OwnerEmail AS Email, COUNT(DISTINCT PUBLIC_CORKBOARD.CB_DateTime) AS PCCount
+            FROM PUBLIC_CORKBOARD
+            GROUP BY PUBLIC_CORKBOARD.OwnerEmail) AS A NATURAL JOIN
+            (SELECT PUBLIC_CORKBOARD.OwnerEmail AS Email, COUNT(*) AS PPCount
+            FROM PUBLIC_CORKBOARD NATURAL JOIN PUSHPIN
+            GROUP BY PUBLIC_CORKBOARD.OwnerEmail) AS B)  AS F 
+            ON USER.Email = F.Email) AS G
+            JOIN
+            (SELECT USER.Email, USER.FullName, VCCount, VPCount  FROM USER LEFT JOIN  
+            (SELECT C.Email AS Email, C.VCCount, D.VPCount FROM
+            (SELECT PRIVATE_CORKBOARD.OwnerEmail AS Email, COUNT(DISTINCT PRIVATE_CORKBOARD.CB_DateTime)   AS VCCount
+            FROM  PRIVATE_CORKBOARD	
+            GROUP BY PRIVATE_CORKBOARD.OwnerEmail) AS C NATURAL JOIN
+            (SELECT PRIVATE_CORKBOARD.OwnerEmail AS Email, COUNT(*)  AS VPCount
+            FROM PRIVATE_CORKBOARD NATURAL JOIN PUSHPIN 
+            GROUP BY PRIVATE_CORKBOARD.OwnerEmail) AS D) AS E
+            ON USER.Email = E.Email) AS H ON G.Email = H.Email 
+            ORDER BY G.PCCount DESC, H.VCCount DESC
+            LIMIT 5");
+
+
+// see popular_site.php
+$sitequery= sprintf("SELECT substring_index(substring_index(substring_index(link, 'https://', -1),'http://',-1), '/', 1) as TRUNCATELink,
+                count(*) as Pcnt FROM pushpin 
+                group by substring_index(substring_index(substring_index(link, 'https://', -1),'http://',-1), '/', 1) 
+                order by Pcnt DESC LIMIT 4");
+           
+
+// see popular_tags.php
+$tagquery= sprintf("SELECT Tag, COUNT(Link), COUNT(DISTINCT c.CB_DateTime) From PushPin p 
+                inner join pushpin_tag t on p.OwnerEmail=t.OwnerEmail and p.CB_DateTime=t.CB_DateTime and p.PP_DateTime=t.PP_DateTime 
+                inner join corkboard c on c.OwnerEmail=p.OwnerEmail and c.CB_DateTime=p.CB_DateTime 
+                GROUP BY Tag 
+                ORDER BY COUNT(Link) DESC LIMIT 5");
